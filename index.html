@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON File Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            max-width: 800px;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed;
+            /* Add fixed table layout */
+        }
+
+        table,
+        th,
+        td {
+            border: 1px solid #ddd;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+            height: 20px;
+            /* Set fixed height */
+            overflow: hidden;
+            /* Prevent content from expanding cell */
+            white-space: nowrap;
+            /* Prevent text wrapping */
+            text-overflow: ellipsis;
+            /* Show ellipsis for overflowing text */
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        form {
+            margin-top: 20px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .form-row input {
+            flex: 1;
+            padding: 5px;
+        }
+
+        .form-row .button-container {
+            display: flex;
+            align-items: center;
+        }
+
+        form button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        form button:hover {
+            background-color: #45a049;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #fileInputLabel {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #fileInputLabel:hover {
+            background-color: #45a049;
+        }
+
+        #fileInputLabel.hidden {
+            display: none;
+        }
+
+        #downloadLink {
+            display: none;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #4CAF50;
+        }
+
+        .new-entry {
+            background-color: #addeb9;
+        }
+
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+
+        .delete-button:hover {
+            background-color: #d32f2f;
+        }
+
+        .update-button {
+            background-color: #3698f4;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+            margin-right: 5px;
+        }
+
+        .update-button:hover {
+            background-color: #3698f4;
+        }
+
+        .save-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+            margin-right: 5px;
+            width: 60px;
+        }
+
+        .save-button:hover {
+            background-color: #45a049;
+        }
+
+        #buttonContainer {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        #buttonContainer button {
+            display: none;
+        }
+
+        #buttonContainer button.visible {
+            display: inline-block;
+        }
+
+        #selectNewFile,
+        #removeFile {
+            display: none;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #selectNewFile:hover,
+        #removeFile:hover {
+            background-color: #45a049;
+        }
+
+        .changed-entry {
+            background-color: #add8e6;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Upload and Display JSON File</h1>
+    <label id="fileInputLabel" for="fileInput">Choose File</label>
+    <input type="file" id="fileInput" accept=".json">
+    <div id="buttonContainer">
+        <button id="selectNewFile">Select New File</button>
+        <button id="removeFile">Remove File</button>
+    </div>
+    <div id="formContainer"></div>
+    <h2 id="fileName"></h2>
+    <table id="jsonTable" border="1"></table>
+    <a id="downloadLink" href="#" download="updated.json">Download Updated JSON</a>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('fileName').textContent = `Current file: ${file.name}`;
+                document.getElementById('fileInputLabel').classList.add('hidden');
+                document.querySelectorAll('#buttonContainer button').forEach(button => button.classList.add('visible'));
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const jsonContent = e.target.result;
+                    const jsonData = JSON.parse(jsonContent);
+                    const table = document.getElementById('jsonTable');
+                    table.innerHTML = '';
+
+                    // Create table headers
+                    const headers = Object.keys(jsonData[0]);
+                    const headerRow = document.createElement('tr');
+                    headers.forEach(header => {
+                        const th = document.createElement('th');
+                        th.textContent = header;
+                        headerRow.appendChild(th);
+                    });
+                    const th = document.createElement('th');
+                    th.textContent = 'Actions';
+                    headerRow.appendChild(th);
+                    table.appendChild(headerRow);
+
+                    // Create table rows
+                    jsonData.forEach((item, index) => {
+                        const row = document.createElement('tr');
+                        headers.forEach(header => {
+                            const cell = document.createElement('td');
+                            cell.textContent = item[header];
+                            row.appendChild(cell);
+                        });
+                        const actionCell = document.createElement('td');
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.className = 'delete-button';
+                        deleteButton.addEventListener('click', function () {
+                            jsonData.splice(index, 1);
+                            table.removeChild(row);
+                            updateDownloadLink(jsonData, file.name);
+                        });
+                        const updateButton = document.createElement('button');
+                        updateButton.textContent = 'Update';
+                        updateButton.className = 'update-button';
+                        updateButton.addEventListener('click', function updateRow() {
+                            headers.forEach(header => {
+                                const cell = row.querySelector(`td:nth-child(${headers.indexOf(header) + 1})`);
+                                const currentText = cell.textContent;
+                                cell.textContent = '';
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.value = currentText;
+                                input.style.width = '90%'; // Match the CSS rule
+                                cell.appendChild(input);
+                            });
+                            updateButton.textContent = 'Save';
+                            updateButton.className = 'save-button';
+                            updateButton.removeEventListener('click', updateRow);
+                            updateButton.addEventListener('click', function saveRow() {
+                                headers.forEach(header => {
+                                    const cell = row.querySelector(`td:nth-child(${headers.indexOf(header) + 1})`);
+                                    const input = cell.querySelector('input');
+                                    item[header] = input.value;
+                                    cell.textContent = input.value;
+                                });
+                                row.classList.add('changed-entry');
+                                updateButton.textContent = 'Update';
+                                updateButton.className = 'update-button';
+                                updateButton.removeEventListener('click', saveRow);
+                                updateButton.addEventListener('click', updateRow);
+                                updateDownloadLink(jsonData, file.name);
+                            });
+                        });
+                        actionCell.appendChild(updateButton);
+                        actionCell.appendChild(deleteButton);
+                        row.appendChild(actionCell);
+                        table.appendChild(row);
+                    });
+
+                    // Clear and create insert form
+                    const formContainer = document.getElementById('formContainer');
+                    formContainer.innerHTML = '';
+                    const form = document.createElement('form');
+                    const inputRow = document.createElement('div');
+                    inputRow.className = 'form-row';
+                    headers.forEach(header => {
+                        const input = document.createElement('input');
+                        input.type = 'text';
+                        input.name = header;
+                        input.placeholder = header;
+                        inputRow.appendChild(input);
+                    });
+                    const buttonContainer = document.createElement('div');
+                    buttonContainer.className = 'button-container';
+                    const submitButton = document.createElement('button');
+                    submitButton.type = 'button';
+                    submitButton.textContent = 'Add';
+                    buttonContainer.appendChild(submitButton);
+                    inputRow.appendChild(buttonContainer);
+                    form.appendChild(inputRow);
+                    formContainer.appendChild(form);
+
+                    // Handle form submission
+                    submitButton.addEventListener('click', function () {
+                        const newRow = {};
+                        headers.forEach(header => {
+                            newRow[header] = form.elements[header].value;
+                        });
+                        jsonData.push(newRow);
+
+                        // Add new row to table
+                        const row = document.createElement('tr');
+                        row.className = 'new-entry';
+                        headers.forEach(header => {
+                            const cell = document.createElement('td');
+                            cell.textContent = newRow[header];
+                            row.appendChild(cell);
+                        });
+                        const actionCell = document.createElement('td');
+                        const deleteButton = document.createElement('button');
+                        deleteButton.textContent = 'Delete';
+                        deleteButton.className = 'delete-button';
+                        deleteButton.addEventListener('click', function () {
+                            jsonData.splice(jsonData.indexOf(newRow), 1);
+                            table.removeChild(row);
+                            updateDownloadLink(jsonData, file.name);
+                        });
+                        const updateButton = document.createElement('button');
+                        updateButton.textContent = 'Update';
+                        updateButton.className = 'update-button';
+                        updateButton.addEventListener('click', function updateRow() {
+                            headers.forEach(header => {
+                                const cell = row.querySelector(`td:nth-child(${headers.indexOf(header) + 1})`);
+                                const currentText = cell.textContent;
+                                cell.textContent = '';
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.value = currentText;
+                                input.style.width = '90%'; // Match the CSS rule
+                                cell.appendChild(input);
+                            });
+                            updateButton.textContent = 'Save';
+                            updateButton.className = 'save-button';
+                            updateButton.removeEventListener('click', updateRow);
+                            updateButton.addEventListener('click', function saveRow() {
+                                headers.forEach(header => {
+                                    const cell = row.querySelector(`td:nth-child(${headers.indexOf(header) + 1})`);
+                                    const input = cell.querySelector('input');
+                                    newRow[header] = input.value;
+                                    cell.textContent = input.value;
+                                });
+                                row.classList.add('changed-entry');
+                                updateButton.textContent = 'Update';
+                                updateButton.className = 'update-button';
+                                updateButton.removeEventListener('click', saveRow);
+                                updateButton.addEventListener('click', updateRow);
+                                updateDownloadLink(jsonData, file.name);
+                            });
+                        });
+                        actionCell.appendChild(deleteButton);
+                        actionCell.appendChild(updateButton);
+                        row.appendChild(actionCell);
+                        table.appendChild(row);
+
+                        // Update JSON file
+                        updateDownloadLink(jsonData, file.name);
+                    });
+
+                    // Update download link
+                    function updateDownloadLink(data, fileName) {
+                        const updatedJsonContent = JSON.stringify(data, null, 2);
+                        const blob = new Blob([updatedJsonContent], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const downloadLink = document.getElementById('downloadLink');
+                        downloadLink.href = url;
+                        downloadLink.download = fileName;
+                        downloadLink.style.display = 'block';
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('selectNewFile').addEventListener('click', function () {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('removeFile').addEventListener('click', function () {
+            location.reload();
+        });
+    </script>
+</body>
+
+</html>
